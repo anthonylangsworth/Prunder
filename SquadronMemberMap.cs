@@ -5,11 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SquadronDump
+namespace Pruner
 {
-    internal class MemberClassMap: ClassMap<Member>
+    internal class SquadronMemberMap: ClassMap<SquadronMember>
     {
-        public MemberClassMap()
+        public SquadronMemberMap()
         {
             Map(m => m.Name).Name("Name");
             Map(m => m.RankId).Name("Squadron Rank");
