@@ -1,0 +1,3 @@
+[submodule "SquadronDump"]
+	path = SquadronDump
+	url = git@github.com:anthonylangsworth/SquadronDump.git
