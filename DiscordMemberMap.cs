@@ -18,7 +18,7 @@ namespace Pruner
 
         private IReadOnlySet<string> GetRoles(ConvertFromStringArgs args)
         {
-            HashSet<string> result = new HashSet<string>();
+            HashSet<string> result = new();
             for(int i = 1; i < args.Row.HeaderRecord.Length; i++)
             {
                 if (args.Row.GetField(i) == "Y")

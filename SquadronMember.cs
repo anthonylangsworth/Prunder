@@ -11,10 +11,10 @@ namespace Pruner
     {
         public string Name { get; set; } = "";
         public uint RankId { get; set; }
-        public DateTime? Requested { get; set; }
+        public DateTime? DateRequested { get; set; }
         public bool Pending { get; set; }
-        public DateTime? Joined { get; set; }
+        public DateTime? DateJoined { get; set; }
         public bool Presence { get; set; }
-        public DateTime? LastOnline { get; set; }
+        public DateTime? DateLastOnline { get; set; }
     }
 }
