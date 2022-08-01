@@ -18,10 +18,15 @@ IList<SquadronMember> GetSquadronMembers()
     return csvReader.GetRecords<SquadronMember>().ToList();
 }
 
+bool SameCommanderName(string discordMember, string squadronMember)
+{
+
+}
+
 IList<DiscordMember> discordMembers = GetDiscordMembers();
 IList<SquadronMember> squadronMembers = GetSquadronMembers();
 
-foreach(string name in squadronMembers.Where(sm => discordMembers.Any(dm => sm.Name == dm.Name)).Select(sm => sm.Name))
+foreach(string name in squadronMembers.Where(sm => discordMembers.Any(dm => string.Equals(sm.Name, dm.Name, StringComparison.OrdinalIgnoreCase))).Select(sm => sm.Name))
 {
     Console.WriteLine(name);
 }
