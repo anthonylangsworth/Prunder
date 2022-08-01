@@ -27,6 +27,32 @@ bool SameCommanderName(string discordMember, string squadronMember, IReadOnlyDic
             && string.Equals(mappedSquadronMember, squadronMember, StringComparison.InvariantCultureIgnoreCase));
 }
 
+//IEnumerable<DiscordMember> GetNotInSquadron(
+//    List<SquadronMember> squadronMembers, List<DiscordMember> discordMembers, IReadOnlyDictionary<string, string> discordToSquadronMemberMap)
+//{
+//    return discordMembers.Where(dm => squadronMembers.All(sm => !SameCommanderName(dm.Name, sm.Name, discordToSquadronMemberMap)));
+//}
+
+//IEnumerable<SquadronMember> GetNotOnDiscord(
+//    List<SquadronMember> squadronMembers, List<DiscordMember> discordMembers, IReadOnlyDictionary<string, string> discordToSquadronMemberMap)
+//{
+//    return squadronMembers.Where(sm => discordMembers.All(dm => !SameCommanderName(dm.Name, sm.Name, discordToSquadronMemberMap)));
+//}
+
+//IEnumerable<(SquadronMember SquadronMember, DiscordMember DiscordMember)> InBoth(
+//    List<SquadronMember> squadronMembers, List<DiscordMember> discordMembers, IReadOnlyDictionary<string, string> discordToSquadronMemberMap)
+//{
+//    foreach (SquadronMember squadronMember in squadronMembers)
+//    {
+//        DiscordMember? matchingDiscordMember = discordMembers.FirstOrDefault(
+//            dm => SameCommanderName(dm.Name, squadronMember.Name, discordToSquadronMemberMap));
+//        if (matchingDiscordMember != null)
+//        {
+//            yield return (squadronMember, matchingDiscordMember);
+//        }
+//    }
+//}
+
 IConfiguration config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
     .Build();
@@ -37,7 +63,8 @@ config.GetRequiredSection("DiscordToSquadronMemberMap").Bind(discordToSquadronMe
 IList<DiscordMember> discordMembers = GetDiscordMembers(config.GetRequiredSection("DiscordMembersFile").Value);
 IList<SquadronMember> squadronMembers = GetSquadronMembers(config.GetRequiredSection("SquadronMembersFile").Value);
 
-foreach(string name in squadronMembers.Where(sm => discordMembers.All(dm => !SameCommanderName(dm.Name, sm.Name, discordToSquadronMemberMap))).Select(sm => sm.Name))
+foreach(string name in squadronMembers.Where(sm => discordMembers.All(dm => !SameCommanderName(dm.Name, sm.Name, discordToSquadronMemberMap)))
+                                      .Select(sm => sm.Name))
 {
     Console.WriteLine(name);
 }
