@@ -30,6 +30,6 @@ public static class DiscordRoles
     public static readonly string RecruitmentOfficers = "Recruitment Officers";
     public static readonly string Veterans = "EDAKL Veterans";
     public static readonly string Leaders = "EDAKL Leaders";
-
-    // The Chief o7, Founder
+    public static readonly string TheChief = "The Chief o7";
+    public static readonly string Founder = "Founder";
 }
