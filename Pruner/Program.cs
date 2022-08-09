@@ -1,7 +1,7 @@
 ﻿using CsvHelper;
-using System.Globalization;
-using Pruner;
 using Microsoft.Extensions.Configuration;
+using Pruner;
+using System.Globalization;
 
 IList<DiscordMember> GetDiscordMembers(string discordMembersFile)
 {
@@ -23,15 +23,22 @@ bool SameCommanderName(string discordMember, string squadronMember, IReadOnlyDic
 {
     return string.Equals(discordMember, squadronMember, StringComparison.InvariantCultureIgnoreCase)
         || string.Equals(discordMember, "CMDR " + squadronMember, StringComparison.InvariantCultureIgnoreCase)
-        || (discordToSquadronMemberMap.TryGetValue(discordMember, out string? mappedSquadronMember) 
+        || (discordToSquadronMemberMap.TryGetValue(discordMember, out string? mappedSquadronMember)
             && string.Equals(mappedSquadronMember, squadronMember, StringComparison.InvariantCultureIgnoreCase));
 }
 
-bool SameLevel(SquadronMember squadronMember, DiscordMember discordMember, Dictionary<string, string[]> rankToRoles)
-{
-    rankToRoles.TryGetValue(squadronMember.RankId.ToString(), out string[]? expectedRoles);
-    return expectedRoles == null || discordMember.Roles.Intersect(expectedRoles).Any();
-}
+//bool SameLevel(SquadronMember squadronMember, DiscordMember discordMember, Dictionary<string, string[]> rankToRoles)
+//{
+//    rankToRoles.TryGetValue(squadronMember.RankId.ToString(), out string[]? expectedRoles);
+//    return expectedRoles == null || discordMember.Roles.Intersect(expectedRoles).Any();
+//}
+
+//int ExpectedRank(SquadronMember squadronMember, DiscordMember discordMember, Dictionary<string, string[]> rankToRoles)
+//{
+//    rankToRoles.TryGetValue(squadronMember.RankId.ToString(), out string[]? expectedRoles);
+//    return expectedRoles == null || discordMember.Roles.Intersect(expectedRoles).Any();
+//    rankToRoles.TryGetValue(squadronMember.RankId.ToString(), out string[]? expectedRoles);
+//}
 
 IEnumerable<DiscordMember> GetNotInSquadron(
     IEnumerable<SquadronMember> squadronMembers, IEnumerable<DiscordMember> discordMembers, IReadOnlyDictionary<string, string> discordToSquadronMemberMap)
@@ -67,8 +74,8 @@ IConfiguration config = new ConfigurationBuilder()
 // Get data
 Dictionary<string, string> discordToSquadronMemberMap = new();
 config.GetRequiredSection("DiscordToSquadronMemberMap").Bind(discordToSquadronMemberMap);
-Dictionary<string, string[]> rankToRoles = new();
-config.GetRequiredSection("RankToRole").Bind(rankToRoles);
+List<RoleToRank> expectedRoleToRanks = new();
+config.GetRequiredSection("RoleToRank").Bind(expectedRoleToRanks);
 Dictionary<string, string> rankToDescription = new();
 config.GetRequiredSection("RankDescriptions").Bind(rankToDescription);
 IList<DiscordMember> discordMembers = GetDiscordMembers(config.GetRequiredSection("DiscordMembersFile").Value);
@@ -89,6 +96,19 @@ Console.WriteLine(string.Join("\n", discordMembersNotInSquadron.Where(dm => dm.R
 Console.WriteLine();
 
 Console.WriteLine("In-game Rank to DiscordRole Mismatch");
-Console.WriteLine(string.Join("\n", inBoth.Where(ib => !SameLevel(ib.SquadronMember, ib.DiscordMember, rankToRoles))
-                                          .Select(ib => $"{ib.DiscordMember.Name}({ib.SquadronMember.Name}) {ib.SquadronMember.RankId} {string.Join(", ", ib.DiscordMember.Roles)}")));
+Console.WriteLine(string.Join("\n", inBoth.Select(ib =>
+                                                {
+                                                    RoleToRank? roleToRank = expectedRoleToRanks.FirstOrDefault(r2r => ib.DiscordMember.Roles.Contains(r2r.Role));
+                                                    return
+                                                    (
+                                                        DiscordName: ib.DiscordMember.Name,
+                                                        Roles: ib.DiscordMember.Roles,
+                                                        SquadronName: ib.SquadronMember.Name,
+                                                        CurrentRankId: ib.SquadronMember.RankId,
+                                                        ExpectedRankId: roleToRank?.RankId,
+                                                        DueToRole: roleToRank?.Role
+                                                    );
+                                                })
+                                          .Where(match => match.ExpectedRankId != null && match.CurrentRankId != match.ExpectedRankId)
+                                          .Select(match => $"{match.DiscordName}, {match.SquadronName}, {rankToDescription[match.CurrentRankId.ToString()]}, {rankToDescription[match.ExpectedRankId?.ToString()]}, {match.DueToRole}")));
 Console.WriteLine();
