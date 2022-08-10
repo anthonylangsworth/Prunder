@@ -27,19 +27,6 @@ bool SameCommanderName(string discordMember, string squadronMember, IReadOnlyDic
             && string.Equals(mappedSquadronMember, squadronMember, StringComparison.InvariantCultureIgnoreCase));
 }
 
-//bool SameLevel(SquadronMember squadronMember, DiscordMember discordMember, Dictionary<string, string[]> rankToRoles)
-//{
-//    rankToRoles.TryGetValue(squadronMember.RankId.ToString(), out string[]? expectedRoles);
-//    return expectedRoles == null || discordMember.Roles.Intersect(expectedRoles).Any();
-//}
-
-//int ExpectedRank(SquadronMember squadronMember, DiscordMember discordMember, Dictionary<string, string[]> rankToRoles)
-//{
-//    rankToRoles.TryGetValue(squadronMember.RankId.ToString(), out string[]? expectedRoles);
-//    return expectedRoles == null || discordMember.Roles.Intersect(expectedRoles).Any();
-//    rankToRoles.TryGetValue(squadronMember.RankId.ToString(), out string[]? expectedRoles);
-//}
-
 IEnumerable<DiscordMember> GetNotInSquadron(
     IEnumerable<SquadronMember> squadronMembers, IEnumerable<DiscordMember> discordMembers, IReadOnlyDictionary<string, string> discordToSquadronMemberMap)
 {
@@ -88,27 +75,53 @@ IList<SquadronMember> squadronMembersNotOnDiscord = GetNotOnDiscord(squadronMemb
 IList<(SquadronMember SquadronMember, DiscordMember DiscordMember)> inBoth = InBoth(squadronMembers, discordMembers, discordToSquadronMemberMap).ToList();
 
 // TODO: Allow report selection via configuration e.g. command line
-//ReportType report;
-//try
-//{
-//    report = Enum.Parse<ReportType>(config.GetRequiredSection("Report").Value);
-//}
-//catch (InvalidOperationException)
-//{
-//
-//Dictionary<ReportType, >
+ReportType report = ReportType.DiscordRoleToInGameSquadronMismatch;
+try
+{
+    // report = Enum.Parse<ReportType>(config.GetRequiredSection("Report").Value);
+}
+catch (InvalidOperationException)
+{
+    Console.Error.WriteLine("Must specify the report");
+    Environment.Exit(1);
+}
 
-// Reports
-//Console.WriteLine("Squadron Memebers Not on the Discord");
-//Console.WriteLine(string.Join("\n", squadronMembersNotOnDiscord.Select(sm => sm.Name)));
-//Console.WriteLine();
 
-//Console.WriteLine("Discord Members Not in the Squadron");
-//DiscordMembersNotInSquadron(discordMembersNotInSquadron, Console.Out);
-//Console.WriteLine();
+switch (report)
+{
+    case ReportType.SquadronMembersNotOnDiscord:
+        SquadronMembersNotOnDiscord(squadronMembersNotOnDiscord, Console.Out);
+        break;
+    case ReportType.DiscordMembersNotInSquadron:
+        DiscordMembersNotInSquadron(discordMembersNotInSquadron, Console.Out);
+        break;
+    case ReportType.DiscordRoleToInGameSquadronMismatch:
+        DiscordRoleToRankMismatch(expectedRoleToRanks, rankToDescription, inBoth, Console.Out);
+        break;
+    default:
+        Console.Error.WriteLine("Unsupported or unknown report");
+        Environment.Exit(1);
+        break;
+}
 
-DiscordRoleToRankMismatch(expectedRoleToRanks, rankToDescription, inBoth, Console.Out);
+// List the PC squadron members not on Discord. They should be encouraged to join.
+void SquadronMembersNotOnDiscord(IList<SquadronMember> squadronMembersNotOnDiscord, TextWriter textWriter)
+{
+    using CsvWriter csvWriter = new(textWriter, CultureInfo.InvariantCulture);
+    csvWriter.WriteRecords(squadronMembersNotOnDiscord.OrderBy(match => match.Name)
+                                                      .Select(dm => new { dm.Name }));
+}
 
+// List the discord PC members not in the squadron. They should be removed from PC Members and added to Mavericks.
+void DiscordMembersNotInSquadron(IList<DiscordMember> discordMembersNotInSquadron, TextWriter textWriter)
+{
+    using CsvWriter csvWriter = new(textWriter, CultureInfo.InvariantCulture);
+    csvWriter.WriteRecords(discordMembersNotInSquadron.Where(dm => dm.Roles.Contains(DiscordRoles.PCMembers) && !dm.Roles.Contains(DiscordRoles.Veterans))
+                                                      .OrderBy(match => match.Name)
+                                                      .Select(dm => new { dm.Name }));
+}
+
+// List the squadron members whose in-game rank does not match their Discord role. Their in-game rank should be corrected.
 void DiscordRoleToRankMismatch(List<RoleToRank> expectedRoleToRanks, Dictionary<string, string> rankToDescription, IList<(SquadronMember SquadronMember, DiscordMember DiscordMember)> inBoth, TextWriter textWriter)
 {
     using CsvWriter csvWriter = new(textWriter, CultureInfo.InvariantCulture);
@@ -129,11 +142,4 @@ void DiscordRoleToRankMismatch(List<RoleToRank> expectedRoleToRanks, Dictionary<
         })
         .Where(match => match.ExpectedRankId != null && match.CurrentRankId != match.ExpectedRankId)
         .OrderBy(match => match.DiscordName));
-}
-
-void DiscordMembersNotInSquadron(IList<DiscordMember> discordMembersNotInSquadron, TextWriter textWriter)
-{
-    textWriter.WriteLine(string.Join("\n", discordMembersNotInSquadron.Where(dm => dm.Roles.Contains(DiscordRoles.PCMembers) && !dm.Roles.Contains(DiscordRoles.Veterans))
-                                                                      .OrderBy(match => match.Name)
-                                                                      .Select(dm => dm.Name)));
 }
