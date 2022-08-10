@@ -1,6 +1,6 @@
 ﻿namespace Pruner
 {
-    internal enum Report
+    internal enum ReportType
     {
         DiscordMembersNotInSquadron,
         DiscordRoleToInGameSquadronMismatch

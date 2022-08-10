@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-
-namespace Pruner
+﻿namespace Pruner
 {
-    internal class SquadronMember
+    internal record SquadronMember
     {
         public string Name { get; set; } = "";
         public uint RankId { get; set; }

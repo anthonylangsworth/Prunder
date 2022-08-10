@@ -87,39 +87,53 @@ IList<DiscordMember> discordMembersNotInSquadron = GetNotInSquadron(squadronMemb
 IList<SquadronMember> squadronMembersNotOnDiscord = GetNotOnDiscord(squadronMembers, discordMembers, discordToSquadronMemberMap).ToList();
 IList<(SquadronMember SquadronMember, DiscordMember DiscordMember)> inBoth = InBoth(squadronMembers, discordMembers, discordToSquadronMemberMap).ToList();
 
+// TODO: Allow report selection via configuration e.g. command line
+//ReportType report;
+//try
+//{
+//    report = Enum.Parse<ReportType>(config.GetRequiredSection("Report").Value);
+//}
+//catch (InvalidOperationException)
+//{
+//
+//Dictionary<ReportType, >
+
+// Reports
 //Console.WriteLine("Squadron Memebers Not on the Discord");
 //Console.WriteLine(string.Join("\n", squadronMembersNotOnDiscord.Select(sm => sm.Name)));
 //Console.WriteLine();
 
-Console.WriteLine("Discord Members Not in the Squadron");
-DiscordMembersNotInSquadron(discordMembersNotInSquadron, Console.Out);
-Console.WriteLine();
+//Console.WriteLine("Discord Members Not in the Squadron");
+//DiscordMembersNotInSquadron(discordMembersNotInSquadron, Console.Out);
+//Console.WriteLine();
 
-Console.WriteLine("Discord role to in-game Rank Mismatch");
 DiscordRoleToRankMismatch(expectedRoleToRanks, rankToDescription, inBoth, Console.Out);
-Console.WriteLine();
 
 void DiscordRoleToRankMismatch(List<RoleToRank> expectedRoleToRanks, Dictionary<string, string> rankToDescription, IList<(SquadronMember SquadronMember, DiscordMember DiscordMember)> inBoth, TextWriter textWriter)
 {
-    textWriter.WriteLine(string.Join("\n", inBoth.Select(ib =>
-                                                    {
-                                                        RoleToRank? roleToRank = expectedRoleToRanks.FirstOrDefault(r2r => ib.DiscordMember.Roles.Contains(r2r.Role));
-                                                        return
-                                                        (
-                                                            DiscordName: ib.DiscordMember.Name,
-                                                            Roles: ib.DiscordMember.Roles,
-                                                            SquadronName: ib.SquadronMember.Name,
-                                                            CurrentRankId: ib.SquadronMember.RankId,
-                                                            ExpectedRankId: roleToRank?.RankId,
-                                                            DueToRole: roleToRank?.Role
-                                                        );
-                                                    })
-                                                .Where(match => match.ExpectedRankId != null && match.CurrentRankId != match.ExpectedRankId)
-                                                .Select(match => $"{match.DiscordName}, {match.SquadronName}, {rankToDescription[match.CurrentRankId.ToString()]}, {rankToDescription[match.ExpectedRankId?.ToString()]}, {match.DueToRole}")));
+    using CsvWriter csvWriter = new(textWriter, CultureInfo.InvariantCulture);
+    csvWriter.Context.RegisterClassMap(new DiscordRoleToRankMismatchMap(rankToDescription));
+    csvWriter.WriteRecords(
+        inBoth.Select(ib =>
+        {
+            RoleToRank? roleToRank = expectedRoleToRanks.FirstOrDefault(r2r => ib.DiscordMember.Roles.Contains(r2r.Role));
+            return new DiscordRoleToRankMismatch()
+            {
+                DiscordName = ib.DiscordMember.Name,
+                Roles = ib.DiscordMember.Roles,
+                SquadronName = ib.SquadronMember.Name,
+                CurrentRankId = ib.SquadronMember.RankId,
+                ExpectedRankId = roleToRank?.RankId,
+                DueToRole = roleToRank?.Role
+            };
+        })
+        .Where(match => match.ExpectedRankId != null && match.CurrentRankId != match.ExpectedRankId)
+        .OrderBy(match => match.DiscordName));
 }
 
 void DiscordMembersNotInSquadron(IList<DiscordMember> discordMembersNotInSquadron, TextWriter textWriter)
 {
     textWriter.WriteLine(string.Join("\n", discordMembersNotInSquadron.Where(dm => dm.Roles.Contains(DiscordRoles.PCMembers) && !dm.Roles.Contains(DiscordRoles.Veterans))
+                                                                      .OrderBy(match => match.Name)
                                                                       .Select(dm => dm.Name)));
 }
